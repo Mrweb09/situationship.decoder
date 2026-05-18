@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const API = import.meta.env.VITE_API_URL || '/api'
 
 export default function UpgradeModal({ onClose, onUnlock, dailyUsed = false }) {
   const [plan, setPlan] = useState('annual')
