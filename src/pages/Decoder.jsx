@@ -34,6 +34,20 @@ const RED_FLAGS = {
   'Catching Feelings': 0,
   'Rizz Detected': 0,
 }
+const EXAMPLE_CONVO = `You: hey you free this weekend?
+Them: maybe why
+You: thought we could hang out or something
+Them: yeah possibly lmk closer to the time
+You: ok cool, saturday work?
+Them: idk i might have stuff on ill let you know
+You: ok no worries
+Them: [left on read for 3 days]
+Them: hey sorry been so busy lately 😭
+You: all good! so saturday still?
+Them: ugh i can't this weekend maybe next week?
+You: sure just let me know
+Them: [seen]`
+
 const LOADING_MSGS = [
   'Reading between the lines... 👀',
   'Analyzing the vibes... 🔮',
@@ -318,6 +332,11 @@ export default function Decoder() {
                 />
                 {conversation.length > 0 && <span style={s.charCount}>{conversation.length} chars</span>}
               </div>
+              {conversation.length === 0 && (
+                <button style={s.exampleBtn} onClick={() => setConversation(EXAMPLE_CONVO)}>
+                  ✨ Try an example conversation
+                </button>
+              )}
               {error && <div style={s.errorBox}><span>⚠️</span><span>{error}</span></div>}
               <button className="main-btn" style={s.mainBtn} onClick={analyse}>
                 Decode My Situation 💀
@@ -501,6 +520,7 @@ const s = {
   dailyNote: { color: '#44ff88', fontSize: '0.78rem', textAlign: 'center', margin: 0, fontWeight: '600' },
   freeNote: { color: 'rgba(255,255,255,0.25)', fontSize: '0.78rem', textAlign: 'center', margin: 0 },
   upgradeInline: { background: 'none', border: 'none', color: '#c084fc', fontSize: 'inherit', fontWeight: '700', cursor: 'pointer', padding: 0, textDecoration: 'underline', textDecorationColor: 'rgba(192,132,252,0.4)' },
+  exampleBtn: { background: 'rgba(168,85,247,0.08)', border: '1px dashed rgba(168,85,247,0.3)', borderRadius: '10px', color: 'rgba(192,132,252,0.8)', fontSize: '0.82rem', fontWeight: '600', padding: '10px', cursor: 'pointer', textAlign: 'center', width: '100%' },
   hint: { color: 'rgba(255,255,255,0.15)', fontSize: '0.7rem', textAlign: 'center', margin: 0 },
   loadingSection: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '22px', padding: '48px 0' },
   loadingText: { color: 'rgba(255,255,255,0.42)', fontSize: '0.95rem', margin: 0, textAlign: 'center' },
