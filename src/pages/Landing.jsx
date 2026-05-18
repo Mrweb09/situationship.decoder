@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const API = import.meta.env.VITE_API_URL || '/api'
 
 const STATUSES = [
   { status: "Rizz Detected", color: "#44ff88", emoji: "🔥", desc: "They're obsessed — enjoy it" },

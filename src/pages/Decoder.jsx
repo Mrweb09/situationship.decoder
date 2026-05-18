@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import UpgradeModal from '../components/UpgradeModal.jsx'
 import { generateShareCard } from '../utils/shareCard.js'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const API = import.meta.env.VITE_API_URL || '/api'
 const FREE_LIMIT = 3
 
 const STATUS_COLORS = {
@@ -162,7 +162,7 @@ export default function Decoder() {
       localStorage.setItem('sdHistory', JSON.stringify(newHist))
     } catch (err) {
       console.error(err)
-      setError(err.message.includes('fetch') ? 'Can\'t reach server. Is it running on port 3001?' : err.message)
+      setError(err.message.includes('fetch') ? 'Something went wrong. Please try again.' : err.message)
     }
     setLoading(false)
   }
