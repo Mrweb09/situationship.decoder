@@ -1,0 +1,92 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  margin: 0;
+  background: #06060f;
+  -webkit-font-smoothing: antialiased;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ── Entrance animations ───────────────────────────────── */
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.card-in { animation: cardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes resultsIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.results-in { animation: resultsIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes msgFade {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.msg-fade { animation: msgFade 0.32s ease both; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* ── Spinner ───────────────────────────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(255,255,255,0.08);
+  border-top-color: #a855f7;
+  border-radius: 50%;
+  animation: spin 0.85s linear infinite;
+}
+
+/* ── Textarea ──────────────────────────────────────────── */
+.sd-textarea:focus {
+  border-color: rgba(168,85,247,0.45) !important;
+  background: rgba(255,255,255,0.07) !important;
+}
+.sd-textarea::placeholder {
+  color: rgba(255,255,255,0.18);
+  line-height: 1.7;
+}
+
+/* ── Buttons ───────────────────────────────────────────── */
+.main-btn {
+  transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s !important;
+}
+.main-btn:hover  { opacity: 0.88; box-shadow: 0 8px 24px rgba(168,85,247,0.25); }
+.main-btn:active { transform: scale(0.98); }
+.main-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.ghost-btn { transition: background 0.15s, color 0.15s !important; }
+.ghost-btn:hover { background: rgba(255,255,255,0.07) !important; color: rgba(255,255,255,0.65) !important; }
+
+/* ── Reply cards ───────────────────────────────────────── */
+.reply-card { transition: background 0.15s, border-color 0.15s, transform 0.1s !important; }
+.reply-card:hover  { background: rgba(255,255,255,0.08) !important; border-color: rgba(255,255,255,0.14) !important; transform: translateY(-1px); }
+.reply-card:active { transform: scale(0.99); }
+
+/* ── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.09); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.17); }
+
+/* ── Landing page ──────────────────────────────────────── */
+/* Smooth scroll for anchor links */
+html { scroll-behavior: smooth; }
+
+/* Nav link hover */
+a { transition: color 0.15s; }
+a:hover { color: rgba(255,255,255,0.55) !important; }
+
+/* ── Mobile ────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  body { font-size: 15px; }
+}

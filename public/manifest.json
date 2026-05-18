@@ -1,0 +1,19 @@
+{
+  "name": "Situationship Decoder",
+  "short_name": "SD Decoder",
+  "description": "Find out where you actually stand. AI reads your texts so you don't have to overthink.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#06060f",
+  "theme_color": "#a855f7",
+  "categories": ["lifestyle", "social"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ]
+}
