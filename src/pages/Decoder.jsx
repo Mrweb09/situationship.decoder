@@ -86,6 +86,8 @@ export default function Decoder() {
   const [rated, setRated] = useState(null)
   const [viralBanner, setViralBanner] = useState(false)
   const [dailyStatus, setDailyStatus] = useState('free')
+  const [emailInput, setEmailInput] = useState('')
+  const [emailSubmitted, setEmailSubmitted] = useState(false)
 
   const intervalRef = useRef(null)
   const toastTimer = useRef(null)
@@ -242,12 +244,27 @@ export default function Decoder() {
     setGeneratingCard(false)
   }
 
+  const submitEmail = async () => {
+    if (!emailInput.includes('@')) return
+    try {
+      await fetch(`${API}/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailInput }),
+      })
+    } catch {}
+    setEmailSubmitted(true)
+    showToast('You\'re on the list 🎉')
+  }
+
   const reset = () => {
     setResult(null)
     setConversation('')
     setError(null)
     setConfWidth(0)
     setRated(null)
+    setEmailInput('')
+    setEmailSubmitted(false)
     setTimeout(() => textareaRef.current?.focus(), 50)
   }
 
@@ -471,6 +488,26 @@ export default function Decoder() {
                 </div>
               )}
 
+              {/* Email capture */}
+              {!emailSubmitted ? (
+                <div style={s.emailBox}>
+                  <p style={s.emailLabel}>📩 Get future decodes + updates</p>
+                  <div style={s.emailRow}>
+                    <input
+                      style={s.emailInput}
+                      type="email"
+                      placeholder="your@email.com"
+                      value={emailInput}
+                      onChange={e => setEmailInput(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && submitEmail()}
+                    />
+                    <button style={s.emailBtn} onClick={submitEmail}>→</button>
+                  </div>
+                </div>
+              ) : (
+                <p style={s.emailDone}>✓ You're on the list — we'll keep you posted</p>
+              )}
+
               <button className="main-btn" style={s.resetBtn} onClick={reset}>Decode Another 🔄</button>
             </div>
           )}
@@ -566,5 +603,11 @@ const s = {
   proNudge: { color: 'rgba(255,255,255,0.25)', fontSize: '0.76rem', textAlign: 'center', margin: 0, lineHeight: '1.5' },
   dailyUsedBox: { background: 'rgba(255,200,100,0.06)', border: '1px solid rgba(255,200,100,0.14)', borderRadius: '12px', padding: '12px 16px' },
   dailyUsedText: { color: 'rgba(255,200,100,0.7)', fontSize: '0.82rem', margin: 0, lineHeight: '1.6', textAlign: 'center' },
+  emailBox: { background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.18)', borderRadius: '14px', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '10px' },
+  emailLabel: { color: 'rgba(255,255,255,0.55)', fontSize: '0.82rem', fontWeight: '600', margin: 0 },
+  emailRow: { display: 'flex', gap: '8px' },
+  emailInput: { flex: 1, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '10px 14px', color: 'white', fontSize: '0.88rem', outline: 'none', fontFamily: 'inherit' },
+  emailBtn: { background: 'linear-gradient(135deg, #ff6eb4, #a855f7)', border: 'none', borderRadius: '10px', color: 'white', fontWeight: '800', fontSize: '1.1rem', padding: '10px 16px', cursor: 'pointer' },
+  emailDone: { color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', textAlign: 'center', margin: 0 },
   resetBtn: { width: '100%', padding: '15px', background: 'linear-gradient(135deg, #ff6eb4, #a855f7)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '0.98rem', fontWeight: '800', cursor: 'pointer' },
 }
