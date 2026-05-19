@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import UpgradeModal from '../components/UpgradeModal.jsx'
 import { generateShareCard } from '../utils/shareCard.js'
@@ -12,6 +12,9 @@ const STATUS_COLORS = {
   'Lowkey Interested': '#ffcc00',
   'Catching Feelings': '#44bbff',
   'Rizz Detected': '#44ff88',
+  'Benching': '#ff6b35',
+  'Love Bombing': '#ff3399',
+  'Zombie Mode': '#b06aff',
 }
 const STATUS_EMOJI = {
   'Ghosting Incoming': '👻',
@@ -19,6 +22,9 @@ const STATUS_EMOJI = {
   'Lowkey Interested': '👀',
   'Catching Feelings': '💕',
   'Rizz Detected': '🔥',
+  'Benching': '🪑',
+  'Love Bombing': '💣',
+  'Zombie Mode': '🧟',
 }
 const STATUS_SUBTEXT = {
   'Ghosting Incoming': 'They\'re about to vanish',
@@ -26,6 +32,9 @@ const STATUS_SUBTEXT = {
   'Lowkey Interested': 'Playing it cool',
   'Catching Feelings': 'They\'re feeling it',
   'Rizz Detected': 'They\'re obsessed',
+  'Benching': 'You\'re the backup plan',
+  'Love Bombing': 'Too much, too fast',
+  'Zombie Mode': 'Back from the dead',
 }
 const RED_FLAGS = {
   'Ghosting Incoming': 4,
@@ -33,6 +42,9 @@ const RED_FLAGS = {
   'Lowkey Interested': 1,
   'Catching Feelings': 0,
   'Rizz Detected': 0,
+  'Benching': 3,
+  'Love Bombing': 2,
+  'Zombie Mode': 3,
 }
 const EXAMPLE_CONVO = `You: hey you free this weekend?
 Them: maybe why
@@ -88,6 +100,10 @@ export default function Decoder() {
   const [dailyStatus, setDailyStatus] = useState('free')
   const [emailInput, setEmailInput] = useState('')
   const [emailSubmitted, setEmailSubmitted] = useState(false)
+  const [imageData, setImageData] = useState(null)
+  const [imageType, setImageType] = useState(null)
+  const [dragOver, setDragOver] = useState(false)
+  const fileInputRef = useRef(null)
 
   const intervalRef = useRef(null)
   const toastTimer = useRef(null)
@@ -139,8 +155,36 @@ export default function Decoder() {
     toastTimer.current = setTimeout(() => setToastVisible(false), 2400)
   }
 
+  const handleImageFile = useCallback((file) => {
+    if (!file || !file.type.startsWith('image/')) return
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      setImageData(e.target.result.split(',')[1])
+      setImageType(file.type)
+      setConversation('')
+    }
+    reader.readAsDataURL(file)
+  }, [])
+
+  const handlePaste = useCallback((e) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault()
+        handleImageFile(item.getAsFile())
+        return
+      }
+    }
+  }, [handleImageFile])
+
+  useEffect(() => {
+    window.addEventListener('paste', handlePaste)
+    return () => window.removeEventListener('paste', handlePaste)
+  }, [handlePaste])
+
   const analyse = async () => {
-    if (!conversation.trim()) { showToast('Paste a conversation first 👆'); return }
+    if (!conversation.trim() && !imageData) { showToast('Paste a conversation or upload a screenshot 👆'); return }
     if (dailyStatus === 'daily_used') { setShowUpgrade(true); return }
 
     setLoading(true)
@@ -153,7 +197,7 @@ export default function Decoder() {
       const res = await fetch(`${API}/analyse`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversation }),
+        body: JSON.stringify(imageData ? { imageData, imageType } : { conversation }),
       })
       if (!res.ok) { const e = await res.json(); throw new Error(e.error || `Error ${res.status}`) }
       const data = await res.json()
@@ -265,6 +309,8 @@ export default function Decoder() {
     setRated(null)
     setEmailInput('')
     setEmailSubmitted(false)
+    setImageData(null)
+    setImageType(null)
     setTimeout(() => textareaRef.current?.focus(), 50)
   }
 
@@ -349,10 +395,31 @@ export default function Decoder() {
                 />
                 {conversation.length > 0 && <span style={s.charCount}>{conversation.length} chars</span>}
               </div>
-              {conversation.length === 0 && (
+              {!imageData && conversation.length === 0 && (
                 <button style={s.exampleBtn} onClick={() => setConversation(EXAMPLE_CONVO)}>
                   ✨ Try an example conversation
                 </button>
+              )}
+
+              {/* Image upload */}
+              <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleImageFile(e.target.files[0])} />
+              {!imageData ? (
+                <div
+                  style={{ ...s.imageUpload, ...(dragOver ? s.imageUploadOver : {}) }}
+                  onDrop={e => { e.preventDefault(); setDragOver(false); handleImageFile(e.dataTransfer.files[0]) }}
+                  onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+                  onDragLeave={() => setDragOver(false)}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <span style={s.imageUploadIcon}>📸</span>
+                  <span style={s.imageUploadText}>Upload a screenshot instead</span>
+                  <span style={s.imageUploadHint}>drag, click or Ctrl+V</span>
+                </div>
+              ) : (
+                <div style={s.imagePreviewWrap}>
+                  <img src={`data:${imageType};base64,${imageData}`} style={s.imagePreview} alt="conversation screenshot" />
+                  <button style={s.removeImg} onClick={() => { setImageData(null); setImageType(null) }}>✕ Remove</button>
+                </div>
               )}
               {error && <div style={s.errorBox}><span>⚠️</span><span>{error}</span></div>}
               <button className="main-btn" style={s.mainBtn} onClick={analyse}>
@@ -558,6 +625,14 @@ const s = {
   freeNote: { color: 'rgba(255,255,255,0.25)', fontSize: '0.78rem', textAlign: 'center', margin: 0 },
   upgradeInline: { background: 'none', border: 'none', color: '#c084fc', fontSize: 'inherit', fontWeight: '700', cursor: 'pointer', padding: 0, textDecoration: 'underline', textDecorationColor: 'rgba(192,132,252,0.4)' },
   exampleBtn: { background: 'rgba(168,85,247,0.08)', border: '1px dashed rgba(168,85,247,0.3)', borderRadius: '10px', color: 'rgba(192,132,252,0.8)', fontSize: '0.82rem', fontWeight: '600', padding: '10px', cursor: 'pointer', textAlign: 'center', width: '100%' },
+  imageUpload: { border: '1px dashed rgba(255,255,255,0.12)', borderRadius: '12px', padding: '14px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', transition: 'all 0.15s' },
+  imageUploadOver: { border: '1px dashed rgba(168,85,247,0.5)', background: 'rgba(168,85,247,0.06)' },
+  imageUploadIcon: { fontSize: '1.2rem' },
+  imageUploadText: { color: 'rgba(255,255,255,0.35)', fontSize: '0.82rem', fontWeight: '600' },
+  imageUploadHint: { color: 'rgba(255,255,255,0.18)', fontSize: '0.72rem', marginLeft: 'auto' },
+  imagePreviewWrap: { position: 'relative', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' },
+  imagePreview: { width: '100%', display: 'block', maxHeight: '280px', objectFit: 'cover', objectPosition: 'top' },
+  removeImg: { position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '0.75rem', fontWeight: '700', padding: '5px 10px', cursor: 'pointer' },
   hint: { color: 'rgba(255,255,255,0.15)', fontSize: '0.7rem', textAlign: 'center', margin: 0 },
   loadingSection: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '22px', padding: '48px 0' },
   loadingText: { color: 'rgba(255,255,255,0.42)', fontSize: '0.95rem', margin: 0, textAlign: 'center' },

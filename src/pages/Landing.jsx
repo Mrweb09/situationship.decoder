@@ -9,6 +9,9 @@ const STATUSES = [
   { status: "Lowkey Interested", color: "#ffcc00", emoji: "👀", desc: "Interested but playing it cool" },
   { status: "Breadcrumbing", color: "#ff8800", emoji: "🍞", desc: "Keeping you on the hook" },
   { status: "Ghosting Incoming", color: "#ff4444", emoji: "👻", desc: "The writing is on the wall" },
+  { status: "Benching", color: "#ff6b35", emoji: "🪑", desc: "You're the backup plan" },
+  { status: "Love Bombing", color: "#ff3399", emoji: "💣", desc: "Too much, too fast — red flag" },
+  { status: "Zombie Mode", color: "#b06aff", emoji: "🧟", desc: "Ghosted you, now they're back" },
 ]
 
 const TESTIMONIALS = [
@@ -149,7 +152,7 @@ export default function Landing() {
       {/* Status showcase */}
       <section style={s.section}>
         <p style={s.sectionEyebrow}>THE VERDICTS</p>
-        <h2 style={s.sectionTitle}>5 brutally honest outcomes</h2>
+        <h2 style={s.sectionTitle}>8 brutally honest outcomes</h2>
         <p style={s.sectionSub}>Every situation gets classified into one of these</p>
         <div style={s.statusGrid}>
           {STATUSES.map((item, i) => (
