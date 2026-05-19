@@ -159,9 +159,24 @@ export default function Decoder() {
     if (!file || !file.type.startsWith('image/')) return
     const reader = new FileReader()
     reader.onload = (e) => {
-      setImageData(e.target.result.split(',')[1])
-      setImageType(file.type)
-      setConversation('')
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const MAX = 1568
+        let { width, height } = img
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round(height * MAX / width); width = MAX }
+          else { width = Math.round(width * MAX / height); height = MAX }
+        }
+        canvas.width = width
+        canvas.height = height
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+        const compressed = canvas.toDataURL('image/jpeg', 0.85)
+        setImageData(compressed.split(',')[1])
+        setImageType('image/jpeg')
+        setConversation('')
+      }
+      img.src = e.target.result
     }
     reader.readAsDataURL(file)
   }, [])
