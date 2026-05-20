@@ -100,6 +100,10 @@ export default function Decoder() {
   const [dailyStatus, setDailyStatus] = useState('free')
   const [emailInput, setEmailInput] = useState('')
   const [emailSubmitted, setEmailSubmitted] = useState(false)
+  const [followUpInput, setFollowUpInput] = useState('')
+  const [followUpAnswer, setFollowUpAnswer] = useState(null)
+  const [followUpLoading, setFollowUpLoading] = useState(false)
+  const [followUpCount, setFollowUpCount] = useState(0)
   const [imageData, setImageData] = useState(null)
   const [imageType, setImageType] = useState(null)
   const [dragOver, setDragOver] = useState(false)
@@ -315,6 +319,29 @@ export default function Decoder() {
     showToast('You\'re on the list 🎉')
   }
 
+  const askFollowUp = async () => {
+    if (!followUpInput.trim() || !result) return
+    if (!isPro && followUpCount >= 1) { setShowUpgrade(true); return }
+    setFollowUpLoading(true)
+    try {
+      const res = await fetch(`${API}/followup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: followUpInput,
+          context: { ...result, conversation },
+        }),
+      })
+      const data = await res.json()
+      if (data.answer) {
+        setFollowUpAnswer(data.answer)
+        setFollowUpCount(c => c + 1)
+        setFollowUpInput('')
+      }
+    } catch {}
+    setFollowUpLoading(false)
+  }
+
   const reset = () => {
     setResult(null)
     setConversation('')
@@ -323,6 +350,9 @@ export default function Decoder() {
     setRated(null)
     setEmailInput('')
     setEmailSubmitted(false)
+    setFollowUpInput('')
+    setFollowUpAnswer(null)
+    setFollowUpCount(0)
     setImageData(null)
     setImageType(null)
     setTimeout(() => textareaRef.current?.focus(), 50)
@@ -584,6 +614,40 @@ export default function Decoder() {
                 <p style={s.emailDone}>✓ You're on the list — we'll keep you posted</p>
               )}
 
+              {/* Follow-up questions */}
+              <div style={s.followUpBox}>
+                <p style={s.followUpHeading}>💬 Got a question about this?</p>
+                {followUpAnswer && (
+                  <div style={s.followUpAnswer}>
+                    <p style={s.followUpAnswerText}>{followUpAnswer}</p>
+                  </div>
+                )}
+                <div style={s.followUpRow}>
+                  <input
+                    style={s.followUpInput}
+                    type="text"
+                    placeholder={!isPro && followUpCount >= 1 ? 'Upgrade to Pro for more questions' : 'Should I text first? Is this worth it?'}
+                    value={followUpInput}
+                    onChange={e => setFollowUpInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && askFollowUp()}
+                    disabled={!isPro && followUpCount >= 1}
+                  />
+                  <button
+                    style={{ ...s.followUpBtn, opacity: followUpLoading ? 0.5 : 1 }}
+                    onClick={askFollowUp}
+                    disabled={followUpLoading || (!isPro && followUpCount >= 1)}
+                  >
+                    {followUpLoading ? '...' : '→'}
+                  </button>
+                </div>
+                {!isPro && followUpCount === 0 && (
+                  <p style={s.followUpHint}>1 free question · <button style={s.upgradeInline} onClick={() => setShowUpgrade(true)}>Upgrade</button> for unlimited</p>
+                )}
+                {!isPro && followUpCount >= 1 && (
+                  <p style={s.followUpHint}><button style={s.upgradeInline} onClick={() => setShowUpgrade(true)}>Upgrade to Pro</button> for unlimited follow-up questions</p>
+                )}
+              </div>
+
               <button className="main-btn" style={s.resetBtn} onClick={reset}>Decode Another 🔄</button>
             </div>
           )}
@@ -694,4 +758,12 @@ const s = {
   emailBtn: { background: 'linear-gradient(135deg, #ff6eb4, #a855f7)', border: 'none', borderRadius: '10px', color: 'white', fontWeight: '800', fontSize: '1.1rem', padding: '10px 16px', cursor: 'pointer' },
   emailDone: { color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', textAlign: 'center', margin: 0 },
   resetBtn: { width: '100%', padding: '15px', background: 'linear-gradient(135deg, #ff6eb4, #a855f7)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '0.98rem', fontWeight: '800', cursor: 'pointer' },
+  followUpBox: { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' },
+  followUpHeading: { color: 'rgba(255,255,255,0.6)', fontSize: '0.88rem', fontWeight: '700', margin: 0 },
+  followUpAnswer: { background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.2)', borderRadius: '12px', padding: '14px 16px' },
+  followUpAnswerText: { color: 'rgba(255,255,255,0.82)', fontSize: '0.92rem', lineHeight: '1.65', margin: 0 },
+  followUpRow: { display: 'flex', gap: '8px' },
+  followUpInput: { flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 14px', color: 'white', fontSize: '0.88rem', outline: 'none', fontFamily: 'inherit' },
+  followUpBtn: { background: 'linear-gradient(135deg, #ff6eb4, #a855f7)', border: 'none', borderRadius: '10px', color: 'white', fontWeight: '800', fontSize: '1.1rem', padding: '10px 16px', cursor: 'pointer' },
+  followUpHint: { color: 'rgba(255,255,255,0.22)', fontSize: '0.74rem', margin: 0, textAlign: 'center' },
 }
