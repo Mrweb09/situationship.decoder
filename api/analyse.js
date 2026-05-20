@@ -63,11 +63,13 @@ ${conversation ? `\nConversation:\n${conversation}` : '\nAnalyse the conversatio
     catch { return res.status(500).json({ error: 'Invalid AI response', raw: text }) }
 
     if (parsed.status && process.env.UPSTASH_REDIS_REST_URL) {
+      const base = process.env.UPSTASH_REDIS_REST_URL
+      const headers = { Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}` }
       const field = parsed.status.replace(/\s+/g, '_')
-      await fetch(
-        `${process.env.UPSTASH_REDIS_REST_URL}/hincrby/sd_status_counts/${encodeURIComponent(field)}/1`,
-        { headers: { Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}` } }
-      ).catch(() => {})
+      await Promise.all([
+        fetch(`${base}/hincrby/sd_status_counts/${encodeURIComponent(field)}/1`, { headers }).catch(() => {}),
+        fetch(`${base}/hincrby/sd_stats/total/1`, { headers }).catch(() => {}),
+      ])
     }
 
     return res.json(parsed)
