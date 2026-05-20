@@ -1,17 +1,23 @@
 const STATUS_COLORS = {
-  "Ghosting Incoming": "#ff4444",
-  "Breadcrumbing": "#ff8800",
-  "Lowkey Interested": "#ffcc00",
-  "Catching Feelings": "#44bbff",
-  "Rizz Detected": "#44ff88",
+  'Ghosting Incoming': '#ff4444',
+  'Breadcrumbing': '#ff8800',
+  'Lowkey Interested': '#ffcc00',
+  'Catching Feelings': '#44bbff',
+  'Rizz Detected': '#44ff88',
+  'Benching': '#ff6b35',
+  'Love Bombing': '#ff3399',
+  'Zombie Mode': '#b06aff',
 }
 
 const STATUS_EMOJI = {
-  "Ghosting Incoming": "👻",
-  "Breadcrumbing": "🍞",
-  "Lowkey Interested": "👀",
-  "Catching Feelings": "💕",
-  "Rizz Detected": "🔥",
+  'Ghosting Incoming': '👻',
+  'Breadcrumbing': '🍞',
+  'Lowkey Interested': '👀',
+  'Catching Feelings': '💕',
+  'Rizz Detected': '🔥',
+  'Benching': '🪑',
+  'Love Bombing': '💣',
+  'Zombie Mode': '🧟',
 }
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -170,7 +176,7 @@ export function generateShareCard(result) {
     c.font = '600 26px system-ui, -apple-system, sans-serif'
     c.fillStyle = 'rgba(255,255,255,0.14)'
     c.textAlign = 'center'
-    c.fillText('situationship-decoder.app', W / 2, 940)
+    c.fillText('situationship-decoder.com', W / 2, 940)
 
     resolve(canvas.toDataURL('image/png'))
   })

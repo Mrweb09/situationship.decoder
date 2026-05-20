@@ -287,7 +287,6 @@ export default function Decoder() {
 
   const downloadCard = async () => {
     if (!result) return
-    if (!isPro) { setShowUpgrade(true); return }
     setGeneratingCard(true)
     try {
       const dataUrl = await generateShareCard(result)
@@ -547,21 +546,16 @@ export default function Decoder() {
                 <button style={s.actionBtn} className="ghost-btn" onClick={shareText}>Share 📤</button>
                 <button style={s.actionBtn} className="ghost-btn" onClick={sendToThem}>Send to them 💀</button>
                 <button
-                  style={{ ...s.actionBtn, ...(isPro ? s.actionBtnPro : s.actionBtnLocked) }}
+                  style={{ ...s.actionBtn, ...s.actionBtnPro }}
                   className="ghost-btn"
                   onClick={downloadCard}
                   disabled={generatingCard}
                 >
-                  {generatingCard ? '...' : isPro ? '📸 Card' : '🔒 Card'}
+                  {generatingCard ? '...' : '📸 Card'}
                 </button>
               </div>
 
-              {!isPro && (
-                <p style={s.proNudge}>
-                  <button style={s.upgradeInline} onClick={() => setShowUpgrade(true)}>Upgrade to Pro</button>
-                  {' '}to download a shareable image card for Instagram & TikTok
-                </p>
-              )}
+              <p style={s.proNudge}>Download your card and share it to Instagram stories or TikTok 📸</p>
 
               {/* Daily decode nudge */}
               {dailyStatus === 'daily_used' && !isPro && (
