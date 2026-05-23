@@ -46,6 +46,23 @@ const RED_FLAGS = {
   'Love Bombing': 2,
   'Zombie Mode': 3,
 }
+const STATUS_POINTS = {
+  'Ghosting Incoming': -10,
+  'Breadcrumbing': -5,
+  'Benching': -5,
+  'Zombie Mode': -3,
+  'Love Bombing': -3,
+  'Lowkey Interested': 5,
+  'Catching Feelings': 15,
+  'Rizz Detected': 20,
+}
+function getScoreLabel(score) {
+  if (score <= -30) return { label: 'Certified Situationship Victim', color: '#ff4444' }
+  if (score <= -10) return { label: 'Living in the grey area', color: '#ff8800' }
+  if (score <= 0)   return { label: 'It\'s complicated', color: '#ffcc00' }
+  if (score <= 20)  return { label: 'Actually doing ok', color: '#44bbff' }
+  return { label: 'Thriving era', color: '#44ff88' }
+}
 const EXAMPLE_CONVO = `You: hey you free this weekend?
 Them: maybe why
 You: thought we could hang out or something
@@ -88,6 +105,7 @@ export default function Decoder() {
   const [toastVisible, setToastVisible] = useState(false)
   const [msgIdx, setMsgIdx] = useState(0)
   const [decodeCount, setDecodeCount] = useState(0)
+  const [situationshipScore, setSituationshipScore] = useState(0)
   const [history, setHistory] = useState([])
   const [showHistory, setShowHistory] = useState(false)
   const [confWidth, setConfWidth] = useState(0)
@@ -120,6 +138,7 @@ export default function Decoder() {
     setIsPro(pro)
     setHistory(JSON.parse(localStorage.getItem('sdHistory') || '[]'))
     setDailyStatus(getDailyStatus(count, pro))
+    setSituationshipScore(parseInt(localStorage.getItem('sdScore') || '0'))
 
     if (searchParams.get('success') === 'true') {
       localStorage.setItem('sdProUnlocked', 'true')
@@ -226,6 +245,11 @@ export default function Decoder() {
       const newCount = decodeCount + 1
       setDecodeCount(newCount)
       localStorage.setItem('sdCount', newCount)
+
+      const points = STATUS_POINTS[data.status] || 0
+      const newScore = situationshipScore + points
+      setSituationshipScore(newScore)
+      localStorage.setItem('sdScore', newScore)
 
       // If using daily decode, mark today as used
       if (newCount > FREE_LIMIT && !isPro) {
@@ -402,6 +426,15 @@ export default function Decoder() {
           <div style={s.header}>
             <h1 style={s.title}>💀 Situationship Decoder</h1>
             <p style={s.subtitle}>Find out where you actually stand</p>
+            {decodeCount > 0 && (() => {
+              const { label, color } = getScoreLabel(situationshipScore)
+              return (
+                <div style={{ ...s.scoreBadge, borderColor: color + '44', background: color + '12' }}>
+                  <span style={{ ...s.scoreNum, color }}>{situationshipScore > 0 ? '+' : ''}{situationshipScore}</span>
+                  <span style={{ ...s.scoreLabel, color }}>{label}</span>
+                </div>
+              )
+            })()}
             {history.length > 0 && (
               <button style={s.historyBtn} className="ghost-btn" onClick={() => setShowHistory(v => !v)}>
                 {showHistory ? '▲ Hide history' : `▼ History (${history.length})`}
@@ -499,6 +532,18 @@ export default function Decoder() {
                   <div style={s.statusSub}>{STATUS_SUBTEXT[result.status]}</div>
                 </div>
               </div>
+
+              {/* Score change */}
+              {(() => {
+                const pts = STATUS_POINTS[result.status] || 0
+                const { label, color } = getScoreLabel(situationshipScore)
+                return (
+                  <div style={{ ...s.scoreChangeRow, color: pts >= 0 ? '#44ff88' : '#ff6666' }}>
+                    <span style={s.scoreChangePts}>{pts >= 0 ? `+${pts}` : pts} points</span>
+                    <span style={s.scoreChangeTotal}>Your score: <span style={{ color }}>{situationshipScore > 0 ? '+' : ''}{situationshipScore} · {label}</span></span>
+                  </div>
+                )
+              })()}
 
               {/* Red flags */}
               {flagCount > 0 && (
@@ -766,4 +811,10 @@ const s = {
   followUpInput: { flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 14px', color: 'white', fontSize: '0.88rem', outline: 'none', fontFamily: 'inherit' },
   followUpBtn: { background: 'linear-gradient(135deg, #ff6eb4, #a855f7)', border: 'none', borderRadius: '10px', color: 'white', fontWeight: '800', fontSize: '1.1rem', padding: '10px 16px', cursor: 'pointer' },
   followUpHint: { color: 'rgba(255,255,255,0.22)', fontSize: '0.74rem', margin: 0, textAlign: 'center' },
+  scoreBadge: { display: 'inline-flex', alignItems: 'center', gap: '8px', border: '1px solid', borderRadius: '999px', padding: '6px 16px', margin: '8px auto 0', },
+  scoreNum: { fontWeight: '900', fontSize: '1.1rem' },
+  scoreLabel: { fontSize: '0.78rem', fontWeight: '700', opacity: 0.85 },
+  scoreChangeRow: { display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.82rem', fontWeight: '700', padding: '8px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px' },
+  scoreChangePts: { fontWeight: '900', fontSize: '1rem' },
+  scoreChangeTotal: { color: 'rgba(255,255,255,0.4)', fontWeight: '500' },
 }
