@@ -67,7 +67,8 @@ export default function Landing() {
         <div style={s.heroInner}>
           <p style={s.heroBadge}>
             ✨ AI-powered · Free to try
-            {liveStats?.accuracyPct != null && ` · ${liveStats.accuracyPct}% say it's accurate`}
+            {liveStats?.total > 0 && ` · ${liveStats.total.toLocaleString()} situations decoded`}
+            {liveStats?.accuracyPct != null && ` · ${liveStats.accuracyPct}% accurate`}
           </p>
           <h1 style={s.h1}>
             Stop texting your friends.<br />

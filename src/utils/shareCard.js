@@ -53,7 +53,7 @@ function wrapText(ctx, text, x, y, maxW, lineH, maxLines = 5) {
   return row + 1
 }
 
-export function generateShareCard(result) {
+export function generateShareCard(result, score, personality) {
   return new Promise((resolve) => {
     const W = 1080, H = 1080
     const canvas = document.createElement('canvas')
@@ -158,25 +158,31 @@ export function generateShareCard(result) {
     roundRect(c, 160, barY + 18, fw, 22, 11)
     c.fill()
 
-    // Explanation
-    c.font = '400 28px system-ui, -apple-system, sans-serif'
-    c.textAlign = 'center'
-    c.fillStyle = 'rgba(255,255,255,0.42)'
-    wrapText(c, result.explanation, W / 2, 730, W - 200, 44, 3)
+    // Score + personality row
+    const hasExtra = score !== undefined || personality
+    if (hasExtra) {
+      c.font = '600 28px system-ui, -apple-system, sans-serif'
+      c.textAlign = 'center'
+      c.fillStyle = 'rgba(255,255,255,0.35)'
+      const scoreTxt = score !== undefined ? `Score: ${score > 0 ? '+' : ''}${score}` : ''
+      const persText = personality ? `${personality.emoji} ${personality.label}` : ''
+      const extraLine = [scoreTxt, persText].filter(Boolean).join('  ·  ')
+      c.fillText(extraLine, W / 2, 730)
+    }
 
     // Bottom divider
     c.strokeStyle = 'rgba(255,255,255,0.05)'
     c.lineWidth = 1
     c.beginPath()
-    c.moveTo(160, 878)
-    c.lineTo(W - 160, 878)
+    c.moveTo(160, hasExtra ? 800 : 878)
+    c.lineTo(W - 160, hasExtra ? 800 : 878)
     c.stroke()
 
     // Branding
     c.font = '600 26px system-ui, -apple-system, sans-serif'
     c.fillStyle = 'rgba(255,255,255,0.14)'
     c.textAlign = 'center'
-    c.fillText('situationship-decoder.com', W / 2, 940)
+    c.fillText('situationship-decoder.com', W / 2, hasExtra ? 860 : 940)
 
     resolve(canvas.toDataURL('image/png'))
   })

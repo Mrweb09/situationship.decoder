@@ -319,6 +319,8 @@ export default function Decoder() {
   const shareText = () => {
     if (!result) return
     const flags = '🚩'.repeat(RED_FLAGS[result.status] || 0)
+    const { label } = getScoreLabel(situationshipScore)
+    const p = getPersonality(history)
     navigator.clipboard.writeText([
       '💀 Situationship Decoder',
       '',
@@ -329,8 +331,11 @@ export default function Decoder() {
       '',
       result.explanation,
       '',
-      'situationship-decoder.app',
-    ].join('\n'))
+      `My score: ${situationshipScore > 0 ? '+' : ''}${situationshipScore} · ${label}`,
+      p ? `My type: ${p.emoji} ${p.label}` : '',
+      '',
+      'situationship-decoder.com',
+    ].filter(Boolean).join('\n'))
     showToast('Results copied — go spill 🔥')
   }
 
@@ -350,7 +355,8 @@ export default function Decoder() {
     if (!result) return
     setGeneratingCard(true)
     try {
-      const dataUrl = await generateShareCard(result)
+      const p = getPersonality(history)
+      const dataUrl = await generateShareCard(result, situationshipScore, p)
       const a = document.createElement('a')
       a.href = dataUrl
       a.download = `situationship-${result.status.toLowerCase().replace(/ /g, '-')}.png`
