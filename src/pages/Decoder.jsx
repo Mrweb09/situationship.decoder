@@ -77,6 +77,18 @@ Them: ugh i can't this weekend maybe next week?
 You: sure just let me know
 Them: [seen]`
 
+const PERSONALITY_TYPES = [
+  { id: 'magnet', label: 'Unavailable People Magnet', desc: 'You keep attracting people who won\'t commit. You deserve consistency — stop settling for crumbs.', color: '#ff4444', emoji: '🧲', condition: h => h.filter(x => ['Ghosting Incoming','Breadcrumbing','Benching'].includes(x.status)).length >= h.length * 0.6 },
+  { id: 'overthinker', label: 'Chronic Overthinker', desc: 'You analyse every message twice. The decoder was literally made for you. Trust your gut more.', color: '#ff8800', emoji: '🌀', condition: h => h.length >= 4 },
+  { id: 'hopeful', label: 'Hopeless Romantic', desc: 'You see the best in people even when the signs say otherwise. Sweet, but set some standards.', color: '#44bbff', emoji: '💫', condition: h => h.filter(x => ['Catching Feelings','Lowkey Interested'].includes(x.status)).length >= 2 },
+  { id: 'thriving', label: 'In Your Thriving Era', desc: 'Your situationships are actually going well. Either you\'ve levelled up or you\'re choosing better people.', color: '#44ff88', emoji: '✨', condition: h => h.filter(x => ['Rizz Detected','Catching Feelings'].includes(x.status)).length >= h.length * 0.5 },
+]
+
+function getPersonality(history) {
+  if (history.length < 3) return null
+  return PERSONALITY_TYPES.find(p => p.condition(history)) || PERSONALITY_TYPES[1]
+}
+
 const LOADING_MSGS = [
   'Reading between the lines... 👀',
   'Analyzing the vibes... 🔮',
@@ -122,6 +134,8 @@ export default function Decoder() {
   const [followUpAnswer, setFollowUpAnswer] = useState(null)
   const [followUpLoading, setFollowUpLoading] = useState(false)
   const [followUpCount, setFollowUpCount] = useState(0)
+  const [streak, setStreak] = useState(0)
+  const [showDailyCheckin, setShowDailyCheckin] = useState(false)
   const [imageData, setImageData] = useState(null)
   const [imageType, setImageType] = useState(null)
   const [dragOver, setDragOver] = useState(false)
@@ -139,6 +153,11 @@ export default function Decoder() {
     setHistory(JSON.parse(localStorage.getItem('sdHistory') || '[]'))
     setDailyStatus(getDailyStatus(count, pro))
     setSituationshipScore(parseInt(localStorage.getItem('sdScore') || '0'))
+    setStreak(parseInt(localStorage.getItem('sdStreak') || '0'))
+
+    const checkinDone = localStorage.getItem('sdCheckinDate') === new Date().toDateString()
+    const hasDecoded = parseInt(localStorage.getItem('sdCount') || '0') > 0
+    if (!checkinDone && hasDecoded) setShowDailyCheckin(true)
 
     if (searchParams.get('success') === 'true') {
       localStorage.setItem('sdProUnlocked', 'true')
@@ -147,7 +166,7 @@ export default function Decoder() {
       showToast('🎉 Pro unlocked! Unlimited decodes enabled.')
       window.history.replaceState({}, '', '/decode')
     }
-    if (searchParams.get('viral') === 'true') {
+    if (searchParams.get('viral') === 'true' || searchParams.get('friend') === 'true') {
       setViralBanner(true)
       window.history.replaceState({}, '', '/decode')
       setTimeout(() => setViralBanner(false), 6000)
@@ -251,6 +270,14 @@ export default function Decoder() {
       setSituationshipScore(newScore)
       localStorage.setItem('sdScore', newScore)
 
+      const today = new Date().toDateString()
+      const lastDecodeDay = localStorage.getItem('sdLastDecodeDay')
+      const yesterday = new Date(Date.now() - 86400000).toDateString()
+      const newStreak = lastDecodeDay === today ? streak : lastDecodeDay === yesterday ? streak + 1 : 1
+      setStreak(newStreak)
+      localStorage.setItem('sdStreak', newStreak)
+      localStorage.setItem('sdLastDecodeDay', today)
+
       // If using daily decode, mark today as used
       if (newCount > FREE_LIMIT && !isPro) {
         localStorage.setItem('sdLastFreeDate', new Date().toDateString())
@@ -305,6 +332,12 @@ export default function Decoder() {
       'situationship-decoder.app',
     ].join('\n'))
     showToast('Results copied — go spill 🔥')
+  }
+
+  const sendToFriend = () => {
+    const url = `${window.location.origin}/decode?friend=true`
+    navigator.clipboard.writeText(`my situationship score is ${situationshipScore > 0 ? '+' : ''}${situationshipScore} 💀 what's yours?\n\n${url}`)
+    showToast('Link copied — send it to your friends 💀')
   }
 
   const sendToThem = () => {
@@ -408,11 +441,28 @@ export default function Decoder() {
         </div>
       )}
 
+      {/* Daily check-in */}
+      {showDailyCheckin && (
+        <div style={s.checkinBar}>
+          <span style={s.checkinText}>Daily check-in: how's the situation today?</span>
+          <div style={s.checkinBtns}>
+            {['😭 Worse','😐 Same','🙂 Better','🔥 Amazing'].map((mood, i) => (
+              <button key={i} style={s.checkinBtn} onClick={() => {
+                localStorage.setItem('sdCheckinDate', new Date().toDateString())
+                setShowDailyCheckin(false)
+                showToast(`Noted — keep going 💪`)
+              }}>{mood}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Nav */}
       <nav style={s.nav}>
         <button style={s.backBtn} className="ghost-btn" onClick={() => navigate('/')}>← Back</button>
         <span style={s.navLogo}>💀 Situationship Decoder</span>
         <div style={s.navRight}>
+          {streak >= 2 && <span style={s.streakBadge}>🔥 {streak} day streak</span>}
           {dailyStatus === 'pro' && <span style={s.proBadge}>✦ Pro</span>}
           {dailyStatus === 'free' && <span style={s.freeBadge}>{freeRemaining} free left</span>}
           {dailyStatus === 'daily_available' && <span style={s.dailyBadge}>Free decode ✓</span>}
@@ -541,6 +591,21 @@ export default function Decoder() {
                   <div style={{ ...s.scoreChangeRow, color: pts >= 0 ? '#44ff88' : '#ff6666' }}>
                     <span style={s.scoreChangePts}>{pts >= 0 ? `+${pts}` : pts} points</span>
                     <span style={s.scoreChangeTotal}>Your score: <span style={{ color }}>{situationshipScore > 0 ? '+' : ''}{situationshipScore} · {label}</span></span>
+                  </div>
+                )
+              })()}
+
+              {/* Better or worse tracker */}
+              {history.length >= 2 && (() => {
+                const prev = history[1]
+                const diff = result.confidence - prev.confidence
+                if (Math.abs(diff) < 5) return null
+                return (
+                  <div style={{ ...s.trendBox, borderColor: diff > 0 ? '#44ff8844' : '#ff444444', background: diff > 0 ? 'rgba(68,255,136,0.05)' : 'rgba(255,68,68,0.05)' }}>
+                    <span style={{ fontSize: '1.2rem' }}>{diff > 0 ? '📈' : '📉'}</span>
+                    <span style={{ color: diff > 0 ? '#44ff88' : '#ff6666', fontSize: '0.85rem', fontWeight: '700' }}>
+                      {diff > 0 ? `Up ${diff}% from last time — things are improving` : `Down ${Math.abs(diff)}% from last time — it's getting worse`}
+                    </span>
                   </div>
                 )
               })()}
@@ -693,6 +758,24 @@ export default function Decoder() {
                 )}
               </div>
 
+              {/* Personality type */}
+              {(() => {
+                const p = getPersonality(history)
+                if (!p) return null
+                return (
+                  <div style={{ ...s.personalityBox, borderColor: p.color + '44', background: p.color + '0d' }}>
+                    <p style={s.personalityEyebrow}>YOUR DATING PERSONALITY</p>
+                    <p style={{ ...s.personalityTitle, color: p.color }}>{p.emoji} {p.label}</p>
+                    <p style={s.personalityDesc}>{p.desc}</p>
+                  </div>
+                )
+              })()}
+
+              {/* Friend challenge */}
+              <button style={s.friendBtn} className="ghost-btn" onClick={sendToFriend}>
+                💀 Challenge a friend — what's their score?
+              </button>
+
               <button className="main-btn" style={s.resetBtn} onClick={reset}>Decode Another 🔄</button>
             </div>
           )}
@@ -817,4 +900,15 @@ const s = {
   scoreChangeRow: { display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.82rem', fontWeight: '700', padding: '8px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px' },
   scoreChangePts: { fontWeight: '900', fontSize: '1rem' },
   scoreChangeTotal: { color: 'rgba(255,255,255,0.4)', fontWeight: '500' },
+  streakBadge: { color: '#ff8800', fontSize: '0.75rem', fontWeight: '800', marginRight: '8px' },
+  checkinBar: { background: 'rgba(168,85,247,0.08)', borderBottom: '1px solid rgba(168,85,247,0.15)', padding: '12px 20px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px', justifyContent: 'center' },
+  checkinText: { color: 'rgba(255,255,255,0.55)', fontSize: '0.83rem', fontWeight: '600' },
+  checkinBtns: { display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center' },
+  checkinBtn: { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '999px', color: 'white', fontSize: '0.78rem', fontWeight: '600', padding: '5px 12px', cursor: 'pointer' },
+  trendBox: { display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', border: '1px solid', borderRadius: '12px' },
+  personalityBox: { border: '1px solid', borderRadius: '16px', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '6px' },
+  personalityEyebrow: { color: 'rgba(255,255,255,0.25)', fontSize: '0.62rem', fontWeight: '800', letterSpacing: '0.12em', margin: 0 },
+  personalityTitle: { fontSize: '1rem', fontWeight: '900', margin: 0 },
+  personalityDesc: { color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', lineHeight: '1.6', margin: 0 },
+  friendBtn: { width: '100%', padding: '13px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '12px', color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', fontWeight: '700', cursor: 'pointer', textAlign: 'center' },
 }
