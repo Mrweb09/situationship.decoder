@@ -136,6 +136,10 @@ export default function Decoder() {
   const [followUpCount, setFollowUpCount] = useState(0)
   const [streak, setStreak] = useState(0)
   const [showDailyCheckin, setShowDailyCheckin] = useState(false)
+  const [mode, setMode] = useState('brutal')
+  const [profiles, setProfiles] = useState([])
+  const [showProfiles, setShowProfiles] = useState(false)
+  const [newProfileName, setNewProfileName] = useState('')
   const [imageData, setImageData] = useState(null)
   const [imageType, setImageType] = useState(null)
   const [dragOver, setDragOver] = useState(false)
@@ -154,6 +158,7 @@ export default function Decoder() {
     setDailyStatus(getDailyStatus(count, pro))
     setSituationshipScore(parseInt(localStorage.getItem('sdScore') || '0'))
     setStreak(parseInt(localStorage.getItem('sdStreak') || '0'))
+    setProfiles(JSON.parse(localStorage.getItem('sdProfiles') || '[]'))
 
     const checkinDone = localStorage.getItem('sdCheckinDate') === new Date().toDateString()
     const hasDecoded = parseInt(localStorage.getItem('sdCount') || '0') > 0
@@ -254,7 +259,7 @@ export default function Decoder() {
       const res = await fetch(`${API}/analyse`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(imageData ? { imageData, imageType } : { conversation }),
+        body: JSON.stringify(imageData ? { imageData, imageType, mode } : { conversation, mode }),
       })
       if (!res.ok) { const e = await res.json(); throw new Error(e.error || `Error ${res.status}`) }
       const data = await res.json()
@@ -405,6 +410,16 @@ export default function Decoder() {
     setFollowUpLoading(false)
   }
 
+  const saveProfile = () => {
+    if (!newProfileName.trim() || !result) return
+    const entry = { name: newProfileName.trim(), status: result.status, confidence: result.confidence, verdict: result.verdict, ts: Date.now() }
+    const updated = [entry, ...profiles].slice(0, 8)
+    setProfiles(updated)
+    localStorage.setItem('sdProfiles', JSON.stringify(updated))
+    setNewProfileName('')
+    showToast(`Saved "${entry.name}" 💾`)
+  }
+
   const reset = () => {
     setResult(null)
     setConversation('')
@@ -491,11 +506,18 @@ export default function Decoder() {
                 </div>
               )
             })()}
-            {history.length > 0 && (
-              <button style={s.historyBtn} className="ghost-btn" onClick={() => setShowHistory(v => !v)}>
-                {showHistory ? '▲ Hide history' : `▼ History (${history.length})`}
-              </button>
-            )}
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {history.length > 0 && (
+                <button style={s.historyBtn} className="ghost-btn" onClick={() => setShowHistory(v => !v)}>
+                  {showHistory ? '▲ Hide history' : `▼ History (${history.length})`}
+                </button>
+              )}
+              {profiles.length > 0 && (
+                <button style={s.historyBtn} className="ghost-btn" onClick={() => setShowProfiles(v => !v)}>
+                  {showProfiles ? '▲ Hide profiles' : `🧷 Profiles (${profiles.length})`}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* History */}
@@ -508,6 +530,21 @@ export default function Decoder() {
                     <span style={s.historyMeta}>{h.confidence}%</span>
                   </div>
                   <p style={s.historyVerdict}>"{h.verdict}"</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Saved profiles */}
+          {showProfiles && profiles.length > 0 && (
+            <div style={s.historyPanel}>
+              {profiles.map((p, i) => (
+                <div key={i} style={{ ...s.historyItem, borderLeft: `3px solid ${STATUS_COLORS[p.status] || '#888'}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: 'white', fontSize: '0.82rem', fontWeight: '700' }}>🧷 {p.name}</span>
+                    <span style={{ ...s.historyStatus, color: STATUS_COLORS[p.status] || '#888' }}>{STATUS_EMOJI[p.status]} {p.status}</span>
+                  </div>
+                  <p style={s.historyVerdict}>"{p.verdict}"</p>
                 </div>
               ))}
             </div>
@@ -554,6 +591,29 @@ export default function Decoder() {
                   <button style={s.removeImg} onClick={() => { setImageData(null); setImageType(null) }}>✕ Remove</button>
                 </div>
               )}
+              {/* Mode selector */}
+              <div style={s.modeSection}>
+                <p style={s.modeLabel}>Analysis mode</p>
+                <div style={s.modeGrid}>
+                  {[
+                    { id: 'brutal', label: '💀 Brutal', desc: 'No filter' },
+                    { id: 'bestfriend', label: '😭 Best Friend', desc: 'Delusional' },
+                    { id: 'therapist', label: '🧠 Therapist', desc: 'Balanced' },
+                    { id: 'toxic', label: '🔥 Toxic Friend', desc: 'Chaotic' },
+                    { id: 'fbi', label: '🔍 FBI Agent', desc: 'Clinical' },
+                  ].map(m => (
+                    <button
+                      key={m.id}
+                      style={{ ...s.modeBtn, ...(mode === m.id ? s.modeBtnActive : {}) }}
+                      onClick={() => setMode(m.id)}
+                    >
+                      <span style={s.modeBtnLabel}>{m.label}</span>
+                      <span style={s.modeBtnDesc}>{m.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {error && <div style={s.errorBox}><span>⚠️</span><span>{error}</span></div>}
               <button className="main-btn" style={s.mainBtn} onClick={analyse}>
                 Decode My Situation 💀
@@ -643,6 +703,54 @@ export default function Decoder() {
 
               {/* Explanation */}
               <p style={s.explanation}>{result.explanation}</p>
+
+              {/* Who likes who more */}
+              {result.effort && (
+                <div style={s.effortSection}>
+                  <p style={s.effortHeading}>💭 Who Likes Who More?</p>
+                  <div style={s.effortRow}>
+                    <div style={s.effortPerson}>
+                      <span style={s.effortName}>You</span>
+                      <div style={s.effortTrack}>
+                        <div style={{ ...s.effortFill, width: `${result.effort.you}%`, background: 'linear-gradient(90deg,#ff6eb4,#a855f7)' }} />
+                      </div>
+                      <span style={{ ...s.effortPct, color: '#ff6eb4' }}>{result.effort.you}%</span>
+                    </div>
+                    <div style={s.effortPerson}>
+                      <span style={s.effortName}>Them</span>
+                      <div style={s.effortTrack}>
+                        <div style={{ ...s.effortFill, width: `${result.effort.them}%`, background: `linear-gradient(90deg,${color}66,${color})` }} />
+                      </div>
+                      <span style={{ ...s.effortPct, color }}>{result.effort.them}%</span>
+                    </div>
+                    {Math.abs(result.effort.you - result.effort.them) > 15 && (
+                      <p style={s.effortVerdict}>
+                        {result.effort.you > result.effort.them
+                          ? `You're putting in ${result.effort.you - result.effort.them}% more effort. Match their energy.`
+                          : `They're more invested than you. Interesting.`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* What Happens Next predictions */}
+              {Array.isArray(result.predictions) && result.predictions.length > 0 && (
+                <div style={s.predictionsSection}>
+                  <p style={s.predictionsHeading}>⏳ What Happens Next?</p>
+                  {result.predictions.map((p, i) => (
+                    <div key={i} style={s.predictionItem}>
+                      <div style={s.predictionTop}>
+                        <span style={s.predictionEvent}>{p.event}</span>
+                        <span style={{ ...s.predictionPct, color: p.pct > 60 ? '#ff6666' : p.pct > 35 ? '#ffcc00' : '#44ff88' }}>{p.pct}%</span>
+                      </div>
+                      <div style={s.predictionTrack}>
+                        <div style={{ ...s.predictionFill, width: `${p.pct}%`, background: p.pct > 60 ? '#ff444466' : p.pct > 35 ? '#ffcc0066' : '#44ff8866' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* What They're Actually Saying */}
               {Array.isArray(result.translations) && result.translations.length > 0 && (
@@ -776,6 +884,22 @@ export default function Decoder() {
                   </div>
                 )
               })()}
+
+              {/* Save profile */}
+              <div style={s.saveProfileBox}>
+                <p style={s.saveProfileLabel}>🧷 Save this situation</p>
+                <div style={s.saveProfileRow}>
+                  <input
+                    style={s.saveProfileInput}
+                    type="text"
+                    placeholder='e.g. "Person A" or "Talking Stage #2"'
+                    value={newProfileName}
+                    onChange={e => setNewProfileName(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && saveProfile()}
+                  />
+                  <button style={s.saveProfileBtn} onClick={saveProfile}>Save</button>
+                </div>
+              </div>
 
               {/* Friend challenge */}
               <button style={s.friendBtn} className="ghost-btn" onClick={sendToFriend}>
@@ -917,4 +1041,33 @@ const s = {
   personalityTitle: { fontSize: '1rem', fontWeight: '900', margin: 0 },
   personalityDesc: { color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', lineHeight: '1.6', margin: 0 },
   friendBtn: { width: '100%', padding: '13px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '12px', color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', fontWeight: '700', cursor: 'pointer', textAlign: 'center' },
+  modeSection: { display: 'flex', flexDirection: 'column', gap: '8px' },
+  modeLabel: { color: 'rgba(255,255,255,0.3)', fontSize: '0.72rem', fontWeight: '700', letterSpacing: '0.1em', margin: 0 },
+  modeGrid: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
+  modeBtn: { flex: '1 1 80px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', padding: '8px 6px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', cursor: 'pointer', minWidth: '60px' },
+  modeBtnActive: { background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.35)' },
+  modeBtnLabel: { color: 'white', fontSize: '0.75rem', fontWeight: '700' },
+  modeBtnDesc: { color: 'rgba(255,255,255,0.3)', fontSize: '0.62rem' },
+  effortSection: { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '12px' },
+  effortHeading: { color: 'white', fontWeight: '800', margin: 0, fontSize: '0.95rem' },
+  effortRow: { display: 'flex', flexDirection: 'column', gap: '10px' },
+  effortPerson: { display: 'flex', alignItems: 'center', gap: '10px' },
+  effortName: { color: 'rgba(255,255,255,0.45)', fontSize: '0.78rem', fontWeight: '700', width: '36px', flexShrink: 0 },
+  effortTrack: { flex: 1, height: '10px', background: 'rgba(255,255,255,0.07)', borderRadius: '999px', overflow: 'hidden' },
+  effortFill: { height: '100%', borderRadius: '999px', transition: 'width 1s ease' },
+  effortPct: { fontWeight: '800', fontSize: '0.88rem', width: '36px', textAlign: 'right', flexShrink: 0 },
+  effortVerdict: { color: 'rgba(255,255,255,0.45)', fontSize: '0.8rem', margin: 0, fontStyle: 'italic', lineHeight: '1.5' },
+  predictionsSection: { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '12px' },
+  predictionsHeading: { color: 'white', fontWeight: '800', margin: 0, fontSize: '0.95rem' },
+  predictionItem: { display: 'flex', flexDirection: 'column', gap: '6px' },
+  predictionTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  predictionEvent: { color: 'rgba(255,255,255,0.65)', fontSize: '0.85rem' },
+  predictionPct: { fontWeight: '800', fontSize: '0.9rem', flexShrink: 0 },
+  predictionTrack: { height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '999px', overflow: 'hidden' },
+  predictionFill: { height: '100%', borderRadius: '999px' },
+  saveProfileBox: { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '10px' },
+  saveProfileLabel: { color: 'rgba(255,255,255,0.45)', fontSize: '0.82rem', fontWeight: '700', margin: 0 },
+  saveProfileRow: { display: 'flex', gap: '8px' },
+  saveProfileInput: { flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 14px', color: 'white', fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' },
+  saveProfileBtn: { background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '10px', color: '#c084fc', fontWeight: '800', fontSize: '0.85rem', padding: '10px 16px', cursor: 'pointer' },
 }
