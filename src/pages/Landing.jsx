@@ -15,8 +15,8 @@ const STATUSES = [
 ]
 
 const TESTIMONIALS = [
-  { text: "sent my whole situationship conversation and got told 'ghosting incoming' with a confidence of 91%. blocked him the next day. i'm healed.", handle: "@maya.irl", emoji: "😭" },
-  { text: "this is actually scary accurate. it called out the breadcrumbing before i even realized that's what was happening lmaooo", handle: "@jess_nvm", emoji: "💀" },
+  { text: "Scarily accurate 😪", handle: "Reddit · r/dating_advice", emoji: "😪" },
+  { text: "Pretty accurate.", handle: "Reddit · r/dating_advice", emoji: "👏" },
   { text: "used it 4 times in one night because i have no chill and zero regrets. the unhinged reply suggestions are sending me", handle: "@ty__online", emoji: "😭" },
 ]
 
