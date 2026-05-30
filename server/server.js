@@ -124,7 +124,7 @@ app.post("/create-checkout-session", async (req, res) => {
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
-      success_url: `${appUrl}/decode?success=true`,
+      success_url: `${appUrl}/decode?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/decode`,
     });
     res.json({ url: session.url });

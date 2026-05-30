@@ -165,11 +165,47 @@ export default function Decoder() {
     if (!checkinDone && hasDecoded) setShowDailyCheckin(true)
 
     if (searchParams.get('success') === 'true') {
-      localStorage.setItem('sdProUnlocked', 'true')
-      setIsPro(true)
-      setDailyStatus('pro')
-      showToast('🎉 Pro unlocked! Unlimited decodes enabled.')
+      const sessionId = searchParams.get('session_id')
       window.history.replaceState({}, '', '/decode')
+      if (sessionId) {
+        fetch(`${API}/verify-pro`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId }),
+        })
+          .then(r => r.json())
+          .then(data => {
+            localStorage.setItem('sdProUnlocked', 'true')
+            if (data.email) localStorage.setItem('sdProEmail', data.email)
+            setIsPro(true)
+            setDailyStatus('pro')
+            showToast('🎉 Pro unlocked! Unlimited decodes enabled.')
+          })
+          .catch(() => {
+            localStorage.setItem('sdProUnlocked', 'true')
+            setIsPro(true)
+            setDailyStatus('pro')
+            showToast('🎉 Pro unlocked! Unlimited decodes enabled.')
+          })
+      }
+    }
+
+    const proEmail = localStorage.getItem('sdProEmail')
+    if (!pro && proEmail) {
+      fetch(`${API}/check-pro`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: proEmail }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.pro) {
+            localStorage.setItem('sdProUnlocked', 'true')
+            setIsPro(true)
+            setDailyStatus('pro')
+          }
+        })
+        .catch(() => {})
     }
     if (searchParams.get('viral') === 'true' || searchParams.get('friend') === 'true') {
       setViralBanner(true)

@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   try {
     const { plan = 'monthly' } = req.body || {}
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
-    const appUrl = process.env.APP_URL || 'https://situationship-decoder.vercel.app'
+    const appUrl = process.env.APP_URL || 'https://situationship-decoder.com'
     const priceId = plan === 'annual'
       ? process.env.STRIPE_ANNUAL_PRICE_ID
       : (process.env.STRIPE_MONTHLY_PRICE_ID || process.env.STRIPE_PRICE_ID)
@@ -19,7 +19,7 @@ export default async function handler(req, res) {
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
-      success_url: `${appUrl}/decode?success=true`,
+      success_url: `${appUrl}/decode?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/decode`,
     })
 

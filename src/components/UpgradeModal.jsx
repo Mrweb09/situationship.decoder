@@ -6,6 +6,10 @@ export default function UpgradeModal({ onClose, onUnlock, dailyUsed = false }) {
   const [plan, setPlan] = useState('annual')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [showRestore, setShowRestore] = useState(false)
+  const [restoreEmail, setRestoreEmail] = useState('')
+  const [restoreLoading, setRestoreLoading] = useState(false)
+  const [restoreMsg, setRestoreMsg] = useState(null)
 
   const handleUpgrade = async () => {
     setLoading(true)
@@ -27,6 +31,30 @@ export default function UpgradeModal({ onClose, onUnlock, dailyUsed = false }) {
       setError('Could not reach server. Make sure it is running.')
       setLoading(false)
     }
+  }
+
+  const handleRestore = async () => {
+    if (!restoreEmail.includes('@')) return
+    setRestoreLoading(true)
+    setRestoreMsg(null)
+    try {
+      const res = await fetch(`${API}/check-pro`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: restoreEmail }),
+      })
+      const data = await res.json()
+      if (data.pro) {
+        localStorage.setItem('sdProUnlocked', 'true')
+        localStorage.setItem('sdProEmail', restoreEmail.toLowerCase())
+        onUnlock()
+      } else {
+        setRestoreMsg('No Pro subscription found for that email.')
+      }
+    } catch {
+      setRestoreMsg('Could not reach server. Try again.')
+    }
+    setRestoreLoading(false)
   }
 
   const monthlyEquiv = plan === 'annual' ? '$2.50' : '$4.99'
@@ -110,6 +138,30 @@ export default function UpgradeModal({ onClose, onUnlock, dailyUsed = false }) {
           <p style={s.waitNote}>Or wait until tomorrow for your next free decode.</p>
         )}
 
+        {!showRestore ? (
+          <button style={s.restoreLink} onClick={() => setShowRestore(true)}>
+            Already paid? Restore access
+          </button>
+        ) : (
+          <div style={s.restoreBox}>
+            <p style={s.restoreLabel}>Enter the email you paid with</p>
+            <div style={s.restoreRow}>
+              <input
+                style={s.restoreInput}
+                type="email"
+                placeholder="your@email.com"
+                value={restoreEmail}
+                onChange={e => setRestoreEmail(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleRestore()}
+              />
+              <button style={s.restoreBtn} onClick={handleRestore} disabled={restoreLoading}>
+                {restoreLoading ? '...' : '→'}
+              </button>
+            </div>
+            {restoreMsg && <p style={s.restoreMsg}>{restoreMsg}</p>}
+          </div>
+        )}
+
         <button style={s.closeBtn} className="ghost-btn" onClick={onClose}>
           Maybe later
         </button>
@@ -146,4 +198,11 @@ const s = {
   upgradeBtn: { width: '100%', padding: '16px', background: 'linear-gradient(135deg, #ff6eb4, #a855f7)', border: 'none', borderRadius: '14px', color: 'white', fontSize: '1rem', fontWeight: '800', cursor: 'pointer' },
   waitNote: { color: 'rgba(255,255,255,0.25)', fontSize: '0.78rem', textAlign: 'center', margin: 0 },
   closeBtn: { width: '100%', padding: '11px', background: 'none', border: 'none', borderRadius: '10px', color: 'rgba(255,255,255,0.22)', fontSize: '0.86rem', cursor: 'pointer' },
+  restoreLink: { background: 'none', border: 'none', color: 'rgba(255,255,255,0.22)', fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.12)', padding: '0', alignSelf: 'center', margin: '0 auto', display: 'block' },
+  restoreBox: { display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '14px' },
+  restoreLabel: { color: 'rgba(255,255,255,0.4)', fontSize: '0.78rem', fontWeight: '600', margin: 0 },
+  restoreRow: { display: 'flex', gap: '8px' },
+  restoreInput: { flex: 1, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '9px', padding: '9px 12px', color: 'white', fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' },
+  restoreBtn: { background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '9px', color: '#c084fc', fontWeight: '800', fontSize: '1rem', padding: '9px 14px', cursor: 'pointer' },
+  restoreMsg: { color: 'rgba(255,150,100,0.8)', fontSize: '0.78rem', margin: 0 },
 }
